@@ -22,17 +22,14 @@ def read_config(config_path):
     return config
 
 def check_whisper_cli(cli_path):
-    """
-    Verifies that whisper-cli works by running the '-h' command.
-    If the command exits with a non-zero code, execution is terminated.
-    """
+    """Verifies whisper-cli by running '-h' and checking exit code."""
     try:
-        result = subprocess.run([cli_path, "-h"], capture_output=True, text=True)
-        if result.returncode != 0:
-            logging.error("whisper-cli -h returned non-zero exit code. Check the path correctness.")
-            sys.exit(1)
-    except Exception as e:
-        logging.error(f"Error checking whisper-cli: {e}")
+        subprocess.run([cli_path, "-h"], check=True, capture_output=True, text=True)
+    except subprocess.CalledProcessError:
+        logging.error("whisper-cli is not working. Check the path.")
+        sys.exit(1)
+    except FileNotFoundError:
+        logging.error("whisper-cli executable not found.")
         sys.exit(1)
 
 def check_model_file(model_path):
@@ -373,25 +370,26 @@ def main():
     output_file = os.path.join(os.path.dirname(mp3_file), base_name + ".txt")
     output_dir = os.path.dirname(mp3_file)
 
-    start_time = time.time()  # start time measurement
+    start_time = time.time()
     
-    # Unified function for processing both mono and stereo audio
-    transcript, error_count = process_audio(
-        audio=audio,
-        cli_path=cli_path,
-        model_path=model_path,
-        language=language,
-        extra_params=extra_params,
-        silence_min_len=silence_min_len,
-        silence_thresh=silence_thresh,
-        merge_gap=merge_gap,
-        num_threads=num_threads,
-        save_errors=save_errors,
-        include_errors=include_errors,
-        output_dir=output_dir,
-        disable_segmentation=disable_segmentation,
-        mp3_file=mp3_file
-    )
+    config = {
+        "cli_path": cli_path,
+        "model_path": model_path,
+        "language": language,
+        "extra_params": extra_params,
+        "silence_min_len": silence_min_len,
+        "silence_thresh": silence_thresh,
+        "merge_gap": merge_gap,
+        "num_threads": num_threads,
+        "save_errors": save_errors,
+        "include_errors": include_errors,
+        "output_dir": output_dir,
+        "disable_segmentation": disable_segmentation,
+        "mp3_file": mp3_file,
+    }
+
+    # Processing audio with parameters from config
+    transcript, error_count = process_audio(audio, config)
 
     try:
         with open(output_file, "w", encoding="utf-8") as f:
@@ -406,10 +404,12 @@ def main():
     tqdm.write(f"Total number of unrecognized segments: {error_count}")
 
 if __name__ == "__main__":
-    logging.basicConfig(level=logging.INFO,
-                        format="%(asctime)s - %(levelname)s - %(message)s")
+    logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
     try:
         main()
+    except KeyboardInterrupt:
+        logging.warning("Process interrupted by user. Exiting.")
+        sys.exit(1)
     except Exception:
         logging.exception("Unexpected error:")
         sys.exit(1)
