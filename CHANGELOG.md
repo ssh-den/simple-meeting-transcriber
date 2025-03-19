@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog],
 and this project adheres to [Semantic Versioning].
 
+## [0.1.2] - 2025-03-19
+
+### Changed
+
+- Fixed bug in the `process_audio` function call. Instead of passing individual parameters, a configuration dictionary can now be unpacked using the `**config` syntax.
+
 ## [0.1.1] - 2025-03-17
 
 ### Changed

@@ -389,7 +389,7 @@ def main():
     }
 
     # Processing audio with parameters from config
-    transcript, error_count = process_audio(audio, config)
+    transcript, error_count = process_audio(audio, **config)
 
     try:
         with open(output_file, "w", encoding="utf-8") as f:
